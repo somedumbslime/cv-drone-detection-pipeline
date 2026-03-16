@@ -37,6 +37,12 @@ Detailed architecture notes: `docs/architecture.md`
 
 See dataset documentation in `docs/dataset.md`.
 
+Convert CVAT export to YOLO format (with train/val/test split from `config/config.yaml`):
+
+```bash
+python scripts/convert_cvat_to_yolo.py
+```
+
 ## Training
 
 Main script: `training/train_yolo.py`
