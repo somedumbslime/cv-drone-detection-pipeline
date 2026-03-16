@@ -1,0 +1,44 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Data and artifacts
+data/raw/*
+data/annotations/*
+data/processed/*
+!data/raw/.gitkeep
+!data/annotations/.gitkeep
+!data/processed/.gitkeep
+
+models/weights/*
+models/onnx/*
+!models/weights/.gitkeep
+!models/onnx/.gitkeep
+
+examples/input/*
+examples/output/*
+!examples/input/.gitkeep
+!examples/output/.gitkeep
+
+runs/
+logs/
+*.pt
+*.onnx
+*.engine
