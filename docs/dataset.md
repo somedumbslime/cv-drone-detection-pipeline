@@ -1,5 +1,7 @@
 ﻿# Dataset
 
+[Українська версія](dataset_ua.md)
+
 ## Data Sources
 
 The project uses drone-related visual media (videos/images) that are converted into labeled object detection samples.
@@ -50,3 +52,4 @@ Be ready to explain:
 - why train/val/test split is needed
 - how CVAT exports are transformed to training-ready data
 - known dataset limitations and class imbalance risks
+

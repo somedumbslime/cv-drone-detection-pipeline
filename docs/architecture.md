@@ -1,5 +1,7 @@
 ﻿# Architecture
 
+[Українська версія](architecture_ua.md)
+
 ## Pipeline Overview
 
 This repository demonstrates an end-to-end computer vision workflow for drone object detection:
@@ -52,3 +54,4 @@ Manual:
 - Prioritize clear ML pipeline stages over extra infrastructure.
 - Use one detector family (YOLO) to focus on data quality and reproducibility.
 - Keep API as a minimal serving layer for model predictions.
+

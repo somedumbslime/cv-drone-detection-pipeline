@@ -1,0 +1,5 @@
+| model_format   | path                        |   size_mb |   precision |   recall |   map50 |   map50_95 |   latency_ms |    fps | runtime                                                | input_dtype   |
+|:---------------|:----------------------------|----------:|------------:|---------:|--------:|-----------:|-------------:|-------:|:-------------------------------------------------------|:--------------|
+| .pt            | models/weights/best.pt      |      5.19 |      0.5126 |   0.3467 |  0.3558 |     0.1658 |       12.701 |  78.74 | torch:cuda                                             | float32       |
+| .onnx          | models/onnx/model.onnx      |     10.09 |      0.494  |   0.3491 |  0.354  |     0.1648 |        9.094 | 109.97 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | numpy.float32 |
+| .onnx (fp16)   | models/onnx/model.fp16.onnx |      5.09 |      0.4944 |   0.3529 |  0.3563 |     0.1656 |       11.965 |  83.57 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | numpy.float16 |

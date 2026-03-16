@@ -1,10 +1,14 @@
 ﻿# Drone Object Detection Pipeline
 
+[Українська версія](README_UA.md)
+
 End-to-end computer vision project focused on drone detection: dataset preparation, CVAT annotation workflow, YOLO training, ONNX export, inference scripts, and FastAPI serving.
 
 ## Project Overview
 
 This project is designed as a CV-oriented ML engineering pipeline, not a web product. The core focus is data workflow, model training, reproducible evaluation, and lightweight deployment.
+
+Practical focus: automate object detection in drone imagery to reduce manual review time and speed up monitoring workflows.
 
 ## What This Project Demonstrates
 
@@ -16,6 +20,8 @@ This project is designed as a CV-oriented ML engineering pipeline, not a web pro
 - FastAPI endpoint for image prediction
 
 ## Architecture
+
+Ukrainian docs: `docs/architecture_ua.md`, `docs/dataset_ua.md`
 
 ```text
 Raw videos / images
@@ -55,6 +61,33 @@ Detailed notes: `docs/dataset.md`
 - Training script: `src/training/train_yolo.py`
 - Evaluation script: `src/training/evaluate.py`
 - Metrics output: `metrics.json`
+- Full training/export/benchmark notebook: `notebooks/model_pipeline_benchmark.ipynb`
+  - GPU benchmark table: `.pt`, `.onnx`, `.onnx (fp16)`
+
+## Benchmark Results (Full Test Split, GPU)
+
+Benchmark setup:
+
+- GPU: NVIDIA GeForce GTX 1080
+- Frameworks: PyTorch + ONNX Runtime (`CUDAExecutionProvider`)
+- Evaluation data: full `test` split from `configs/dataset.yaml`
+
+| model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| `.onnx` | `models/onnx/model.onnx` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.418 | 106.18 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float32` |
+| `.pt` | `models/weights/best.pt` | 5.19 | 0.5126 | 0.3467 | 0.3558 | 0.1658 | 13.718 | 72.90 | torch:cuda | `float32` |
+| `.onnx (fp16)` | `models/onnx/model.fp16.onnx` | 5.09 | 0.4944 | 0.3529 | 0.3563 | 0.1656 | 13.829 | 72.31 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float16` |
+
+Key takeaways:
+
+- `.onnx` (FP32) is the fastest model in this setup: around `1.46x` FPS vs `.pt`.
+- Quality drop from `.pt` to `.onnx` is small (`mAP50`: `-0.0018`, `mAP50-95`: `-0.0010`), which is acceptable for many real-time scenarios.
+- `.onnx (fp16)` is not faster than `.onnx` FP32 on GTX 1080 (Pascal has no Tensor Cores), so FP16 is not the best option on this hardware.
+
+Recommended deployment choice for edge inference:
+
+- Primary model: `.onnx` FP32 for best latency/FPS to quality balance.
+- Fallback/reference model: `.pt` for training-side baseline comparisons.
 
 ## Inference
 
@@ -86,7 +119,9 @@ drone-object-detection-pipeline
 │
 ├ docs
 │   ├ architecture.md
-│   └ dataset.md
+│   ├ architecture_ua.md
+│   ├ dataset.md
+│   └ dataset_ua.md
 │
 ├ configs
 │   ├ dataset.yaml
@@ -99,7 +134,8 @@ drone-object-detection-pipeline
 │   └ processed
 │
 ├ notebooks
-│   └ dataset_analysis.ipynb
+│   ├ dataset_analysis.ipynb
+│   └ model_pipeline_benchmark.ipynb
 │
 ├ src
 │   ├ data
@@ -172,7 +208,7 @@ python src/inference/infer_video.py
 7. Start API:
 
 ```bash
-uvicorn src.api.main:app --reload
+python -m uvicorn src.api.main:app --reload
 ```
 
 ## Example Results
@@ -182,6 +218,17 @@ Place examples for portfolio review:
 - `examples/input/`: 2-3 sample inputs
 - `examples/output/`: 2-3 detection outputs with bounding boxes
 - `metrics.json`: precision/recall/mAP from test split evaluation
+
+## Business Value
+
+This project is positioned as an ML pipeline that solves practical monitoring tasks:
+
+- reduces manual analysis workload for drone footage
+- increases throughput for near real-time detection workflows
+- provides reproducible model evaluation for safer model updates
+- exposes detection through API, enabling integration into existing systems
+
+For CV/HR review, this demonstrates full pipeline ownership: data preparation, annotation workflow, model training, export to deployment format, inference benchmarking, and API serving.
 
 ## Challenges Solved
 
@@ -196,3 +243,6 @@ Place examples for portfolio review:
 - structured configs simplify reproducible ML experimentation
 - deployment-friendly artifacts (ONNX + API) improve project completeness for CV
 - small, clear pipelines are easier to defend in interviews than over-engineered stacks
+
+
+

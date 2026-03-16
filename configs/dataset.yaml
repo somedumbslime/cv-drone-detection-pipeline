@@ -3,30 +3,4 @@ train: images/train
 val: images/val
 test: images/test
 names:
-  0: aircraft_unknown
-  1: airplane
-  2: apc
-  3: armored_vehicle_unknown
-  4: artillery_unknown
-  5: car
-  6: civilian
-  7: civilian truck
-  8: command_post
-  9: drone
-  10: engineering_vehicle
-  11: fpv_drone
-  12: helicopter
-  13: howitzer
-  14: ifv
-  15: lav
-  16: logistics_trailer
-  17: military biker
-  18: military truck
-  19: mlrs
-  20: motorcycle
-  21: radar
-  22: sam_system
-  23: soldier
-  24: spg
-  25: support_unknown
-  26: tank
+  0: soldier

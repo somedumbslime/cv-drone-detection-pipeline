@@ -21,7 +21,7 @@ data_preparation:
 
 train:
   model: yolo11n.pt
-  data: configs/dataset.yaml
+  data: data/processed/YOLO/dataset.yaml
   epochs: 50
   imgsz: 640
   batch: 16
@@ -31,7 +31,7 @@ train:
 
 evaluate:
   weights: models/weights/best.pt
-  data: configs/dataset.yaml
+  data: data/processed/YOLO/dataset.yaml
   split: test
   imgsz: 640
   batch: 16
