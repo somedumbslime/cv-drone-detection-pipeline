@@ -21,9 +21,11 @@ Thumbs.db
 
 # Data and artifacts
 data/raw/*
+data/interim/*
 data/annotations/*
 data/processed/*
 !data/raw/.gitkeep
+!data/interim/.gitkeep
 !data/annotations/.gitkeep
 !data/processed/.gitkeep
 
@@ -31,11 +33,6 @@ models/weights/*
 models/onnx/*
 !models/weights/.gitkeep
 !models/onnx/.gitkeep
-
-examples/input/*
-examples/output/*
-!examples/input/.gitkeep
-!examples/output/.gitkeep
 
 runs/
 logs/

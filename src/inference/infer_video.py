@@ -1,11 +1,16 @@
 ﻿import cv2
 import yaml
 
-from utils import draw_detections, ensure_parent, load_model, run_inference
+try:
+    from src.inference.utils import draw_detections, ensure_parent, load_model, run_inference
+except ModuleNotFoundError:
+    from utils import draw_detections, ensure_parent, load_model, run_inference
+
+CONFIG_PATH = "configs/train_config.yaml"
 
 
 def main() -> None:
-    with open("config/config.yaml", "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f) or {}
 
     inference_config = config.get("inference") or {}
@@ -28,7 +33,7 @@ def main() -> None:
     )
 
     model = load_model(inference_config["weights"])
-    conf = inference_config.get("conf", 0.25)
+    conf = float(inference_config.get("conf", 0.25))
 
     while True:
         ok, frame = cap.read()

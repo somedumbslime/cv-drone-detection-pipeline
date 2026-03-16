@@ -1,11 +1,16 @@
 ﻿import cv2
 import yaml
 
-from utils import draw_detections, ensure_parent, load_model, run_inference
+try:
+    from src.inference.utils import draw_detections, ensure_parent, load_model, run_inference
+except ModuleNotFoundError:
+    from utils import draw_detections, ensure_parent, load_model, run_inference
+
+CONFIG_PATH = "configs/train_config.yaml"
 
 
 def main() -> None:
-    with open("config/config.yaml", "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f) or {}
 
     inference_config = config.get("inference") or {}
@@ -16,7 +21,7 @@ def main() -> None:
         raise FileNotFoundError(f"Unable to read input image: {image_config['input']}")
 
     model = load_model(inference_config["weights"])
-    predictions = run_inference(model, image, conf=inference_config.get("conf", 0.25))
+    predictions = run_inference(model, image, conf=float(inference_config.get("conf", 0.25)))
     rendered = draw_detections(image, predictions[0])
 
     ensure_parent(image_config["output"])

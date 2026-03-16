@@ -1,24 +1,54 @@
 ﻿# Architecture
 
-The project follows a simple and interview-friendly ML pipeline:
+## Pipeline Overview
 
-1. Collect drone images and videos in diverse environments.
-2. Annotate objects in CVAT and export labels in YOLO format.
-3. Validate and split dataset into train/val/test.
-4. Train a YOLO detector.
-5. Export best model to ONNX for portable inference.
-6. Run inference via scripts (image/video) and expose a REST API.
+This repository demonstrates an end-to-end computer vision workflow for drone object detection:
 
-## Components
+1. Raw videos/images are stored in `data/raw/`.
+2. Frames are extracted into `data/interim/`.
+3. Near-duplicate frames are removed.
+4. Data is annotated in CVAT.
+5. CVAT export is converted to YOLO dataset format and split into train/val/test.
+6. YOLO model is trained and best weights are saved in `models/weights/`.
+7. Trained weights are exported to ONNX in `models/onnx/`.
+8. Inference is available via scripts (`src/inference/`) and FastAPI (`src/api/`).
 
-- `data/`: dataset stages (raw, annotations, processed)
-- `training/`: training entrypoint and configs
-- `inference/`: reusable inference logic and CLIs
-- `api/`: FastAPI serving layer
-- `models/`: trained and exported model artifacts
+## Data Flow
 
-## Design Goals
+```text
+Raw videos / images
+        -> Frame extraction
+        -> Deduplication
+        -> CVAT annotation
+        -> YOLO dataset conversion + split
+        -> YOLO training
+        -> ONNX export
+        -> Image/Video inference
+        -> FastAPI /predict endpoint
+```
 
-- Keep implementation practical and readable.
-- Show full ML lifecycle for CV portfolio use.
-- Avoid unnecessary infrastructure complexity.
+## Automated vs Manual Steps
+
+Automated:
+
+- frame extraction (`src/data/extract_frames.py`)
+- deduplication (`src/data/deduplicate.py`)
+- dataset conversion and split (`src/data/prepare_dataset.py`)
+- training (`src/training/train_yolo.py`)
+- evaluation (`src/training/evaluate.py`)
+- ONNX export (`src/training/export_onnx.py`)
+- inference scripts and API
+
+Manual:
+
+- source data collection
+- labeling decisions and QA in CVAT
+- class taxonomy updates
+- model error analysis and iteration
+
+## Design Decisions
+
+- Keep the architecture simple and interview-defensible.
+- Prioritize clear ML pipeline stages over extra infrastructure.
+- Use one detector family (YOLO) to focus on data quality and reproducibility.
+- Keep API as a minimal serving layer for model predictions.

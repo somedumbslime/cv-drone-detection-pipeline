@@ -1,90 +1,134 @@
-﻿# CV Drone Detection Pipeline
+﻿# Drone Object Detection Pipeline
 
-End-to-end computer vision pipeline for drone detection: dataset preparation, annotation flow, YOLO training, model export to ONNX, inference scripts, and a lightweight FastAPI service.
+End-to-end computer vision project focused on drone detection: dataset preparation, CVAT annotation workflow, YOLO training, ONNX export, inference scripts, and FastAPI serving.
 
 ## Project Overview
 
-This repository demonstrates a practical ML engineering workflow for object detection without heavy production overhead.
+This project is designed as a CV-oriented ML engineering pipeline, not a web product. The core focus is data workflow, model training, reproducible evaluation, and lightweight deployment.
+
+## What This Project Demonstrates
+
+- dataset preparation from raw media
+- deduplication and data quality checks
+- CVAT-to-YOLO annotation conversion with train/val/test split
+- YOLO model training and evaluation
+- ONNX export for deployment-ready inference
+- FastAPI endpoint for image prediction
 
 ## Architecture
 
 ```text
-Dataset
-   |
-   v
-Annotation (CVAT)
-   |
-   v
-Training (YOLO)
-   |
-   v
-Model Export (ONNX)
-   |
-   v
-Inference
-   |
-   v
-FastAPI Service
+Raw videos / images
+        ↓
+Frame extraction
+        ↓
+Deduplication
+        ↓
+Annotation workflow (CVAT)
+        ↓
+Dataset split
+        ↓
+YOLO training
+        ↓
+Model export (ONNX)
+        ↓
+Image / video inference
+        ↓
+FastAPI API
 ```
 
-Detailed architecture notes: `docs/architecture.md`
+## Dataset And Labeling Workflow
 
-## Dataset
+- Source media is stored in `data/raw/`
+- Frames are extracted to `data/interim/`
+- Near-duplicates are removed before annotation
+- Images are annotated in CVAT
+- CVAT export is converted into YOLO format in `data/processed/YOLO/`
+- Split coefficients are configured in `configs/train_config.yaml`
 
-- Raw images: `data/raw/`
-- Annotation files: `data/annotations/`
-- Processed splits: `data/processed/`
+Detailed notes: `docs/dataset.md`
 
-See dataset documentation in `docs/dataset.md`.
+## Training Pipeline
 
-Convert CVAT export to YOLO format (with train/val/test split from `config/config.yaml`):
-
-```bash
-python scripts/convert_cvat_to_yolo.py
-```
-
-## Training
-
-Main script: `training/train_yolo.py`
-
-Example:
-
-```bash
-python training/train_yolo.py
-```
-
-Configs:
-
-- `config/config.yaml` - all runtime settings (training + inference)
-- `config/dataset.yaml` - YOLO dataset paths and classes
+- Training config: `configs/train_config.yaml` (`train` section)
+- Dataset config: `configs/dataset.yaml`
+- Training script: `src/training/train_yolo.py`
+- Evaluation script: `src/training/evaluate.py`
+- Metrics output: `metrics.json`
 
 ## Inference
 
-Image inference:
+- Image inference: `src/inference/infer_image.py`
+- Video inference: `src/inference/infer_video.py`
+- Common utilities: `src/inference/utils.py`
 
-```bash
-python inference/infer_image.py
-```
-
-Video inference:
-
-```bash
-python inference/infer_video.py
-```
+Inference parameters (weights, confidence, I/O paths) are in `configs/train_config.yaml`.
 
 ## API
 
-Run API:
+FastAPI app: `src/api/main.py`
 
-```bash
-uvicorn api.main:app --reload
+Endpoints:
+
+- `GET /health`
+- `POST /predict` (multipart image file)
+
+Response includes class id, class name, confidence, and bbox coordinates.
+
+## Repository Structure
+
+```text
+drone-object-detection-pipeline
+│
+├ README.md
+├ requirements.txt
+├ .gitignore
+│
+├ docs
+│   ├ architecture.md
+│   └ dataset.md
+│
+├ configs
+│   ├ dataset.yaml
+│   └ train_config.yaml
+│
+├ data
+│   ├ raw
+│   ├ interim
+│   ├ annotations
+│   └ processed
+│
+├ notebooks
+│   └ dataset_analysis.ipynb
+│
+├ src
+│   ├ data
+│   │   ├ extract_frames.py
+│   │   ├ deduplicate.py
+│   │   └ prepare_dataset.py
+│   ├ training
+│   │   ├ train_yolo.py
+│   │   ├ evaluate.py
+│   │   └ export_onnx.py
+│   ├ inference
+│   │   ├ infer_image.py
+│   │   ├ infer_video.py
+│   │   └ utils.py
+│   └ api
+│       ├ main.py
+│       └ schemas.py
+│
+├ models
+│   ├ weights
+│   └ onnx
+│
+├ examples
+│   ├ input
+│   └ output
+│
+└ assets
+    └ architecture.png
 ```
-
-Endpoint:
-
-- `POST /predict` with multipart field `file` (image)
-
-Response contains predicted bounding boxes, classes, and confidence scores.
 
 ## How To Run
 
@@ -94,19 +138,61 @@ Response contains predicted bounding boxes, classes, and confidence scores.
 pip install -r requirements.txt
 ```
 
-2. Prepare dataset and labels.
-3. Train model with `training/train_yolo.py`.
-4. Export model to ONNX (optional for deployment).
-5. Run inference scripts or start API.
+2. Prepare dataset from CVAT export:
 
-## Results
+```bash
+python src/data/prepare_dataset.py
+```
 
-Add to this section:
+3. Train model:
 
-- qualitative detection examples (`examples/output/`)
-- validation metrics (precision, recall, mAP)
-- speed/latency notes for inference
+```bash
+python src/training/train_yolo.py
+```
 
-## Tech Stack
+4. Evaluate on test split:
 
-Python, PyTorch, Ultralytics YOLO, OpenCV, ONNX, FastAPI
+```bash
+python src/training/evaluate.py
+```
+
+5. Export to ONNX:
+
+```bash
+python src/training/export_onnx.py
+```
+
+6. Run inference scripts:
+
+```bash
+python src/inference/infer_image.py
+python src/inference/infer_video.py
+```
+
+7. Start API:
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+## Example Results
+
+Place examples for portfolio review:
+
+- `examples/input/`: 2-3 sample inputs
+- `examples/output/`: 2-3 detection outputs with bounding boxes
+- `metrics.json`: precision/recall/mAP from test split evaluation
+
+## Challenges Solved
+
+- converting CVAT export into consistent YOLO train/val/test structure
+- keeping split reproducible using configurable coefficients and seed
+- separating training, inference, and API concerns into clear modules
+- exposing the same model logic via scripts and API
+
+## What I Learned
+
+- data quality (dedup + annotation consistency) has direct impact on detector quality
+- structured configs simplify reproducible ML experimentation
+- deployment-friendly artifacts (ONNX + API) improve project completeness for CV
+- small, clear pipelines are easier to defend in interviews than over-engineered stacks
