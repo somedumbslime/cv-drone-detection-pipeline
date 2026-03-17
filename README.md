@@ -177,6 +177,10 @@ drone-object-detection-pipeline
 pip install -r requirements.txt
 ```
 
+System requirement for data preparation:
+
+- Install `ffmpeg` and make sure it is available in `PATH` (`ffmpeg -version` should work).
+
 2. Prepare dataset from CVAT export:
 
 ```bash
