@@ -188,12 +188,6 @@ drone-object-detection-pipeline
 
 ## Example Results
 
-Place examples for portfolio review:
-
-- `examples/input/`: 2-3 sample inputs
-- `examples/output/`: 2-3 detection outputs with bounding boxes
-- `metrics.json`: precision/recall/mAP from test split evaluation
-
 Visual examples (soldier detection):
 
 | Input | Detection Output |
