@@ -4,6 +4,23 @@
 
 End-to-end computer vision project focused on drone detection: dataset preparation, CVAT annotation workflow, YOLO training, ONNX export, inference scripts, and FastAPI serving.
 
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [What This Project Demonstrates](#what-this-project-demonstrates)
+- [Architecture](#architecture)
+- [Dataset And Labeling Workflow](#dataset-and-labeling-workflow)
+- [Training Pipeline](#training-pipeline)
+- [Benchmark Results (Full Test Split, GPU)](#benchmark-results-full-test-split-gpu)
+- [Inference](#inference)
+- [API](#api)
+- [Repository Structure](#repository-structure)
+- [Example Results](#example-results)
+- [Business Value](#business-value)
+- [Challenges Solved](#challenges-solved)
+- [What I Learned](#what-i-learned)
+- [How To Run](#how-to-run)
+
 ## Project Overview
 
 This project is designed as a CV-oriented ML engineering pipeline, not a web product. The core focus is data workflow, model training, reproducible evaluation, and lightweight deployment.
@@ -169,55 +186,6 @@ drone-object-detection-pipeline
     └ architecture.png
 ```
 
-## How To Run
-
-1. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-System requirement for data preparation:
-
-- Install `ffmpeg` and make sure it is available in `PATH` (`ffmpeg -version` should work).
-
-2. Prepare dataset from CVAT export:
-
-```bash
-python src/data/prepare_dataset.py
-```
-
-3. Train model:
-
-```bash
-python src/training/train_yolo.py
-```
-
-4. Evaluate on test split:
-
-```bash
-python src/training/evaluate.py
-```
-
-5. Export to ONNX:
-
-```bash
-python src/training/export_onnx.py
-```
-
-6. Run inference scripts:
-
-```bash
-python src/inference/infer_image.py
-python src/inference/infer_video.py
-```
-
-7. Start API:
-
-```bash
-python -m uvicorn src.api.main:app --reload
-```
-
 ## Example Results
 
 Place examples for portfolio review:
@@ -225,6 +193,13 @@ Place examples for portfolio review:
 - `examples/input/`: 2-3 sample inputs
 - `examples/output/`: 2-3 detection outputs with bounding boxes
 - `metrics.json`: precision/recall/mAP from test split evaluation
+
+Visual examples (soldier detection):
+
+| Input | Detection Output |
+| --- | --- |
+| ![Input sample 01](examples/input/sample_01.jpg) | ![Output sample 01](examples/output/sample_01_bbox.jpg) |
+| ![Input sample 02](examples/input/sample_02.jpg) | ![Output sample 02](examples/output/sample_02_bbox.jpg) |
 
 ## Business Value
 
@@ -250,6 +225,86 @@ For CV/HR review, this demonstrates full pipeline ownership: data preparation, a
 - structured configs simplify reproducible ML experimentation
 - deployment-friendly artifacts (ONNX + API) improve project completeness for CV
 - small, clear pipelines are easier to defend in interviews than over-engineered stacks
+
+## How To Run
+
+### System Requirements
+
+- Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+- Install `ffmpeg` and ensure it is available in `PATH` (`ffmpeg -version` should work).
+- For large-scale annotation, run a local CVAT container (Docker) and use it as the labeling workspace.
+
+### Data Preparation
+
+1. Put source videos into `data/raw/`.
+2. Extract frames and remove near-duplicates:
+
+```bash
+python src/data/extract_frames.py
+python src/data/deduplicate.py
+```
+
+3. Create a CVAT task and annotate the prepared frames.
+4. Export annotations in YOLO format. If direct YOLO export is unavailable in your CVAT setup, normalize the exported data with:
+
+```bash
+python src/data/prepare_dataset.py
+```
+
+5. Run dataset analysis:
+
+```bash
+jupyter notebook notebooks/dataset_analysis.ipynb
+```
+
+### Model Building
+
+1. Configure parameters in `configs/train_config.yaml` and `configs/dataset.yaml`.
+2. Train the `.pt` model:
+
+```bash
+python src/training/train_yolo.py
+```
+
+3. Evaluate on `test` split:
+
+```bash
+python src/training/evaluate.py
+```
+
+4. Export to `.onnx`:
+
+```bash
+python src/training/export_onnx.py
+```
+
+### Benchmark
+
+Use the notebook to compare `.pt`, `.onnx`, and `.onnx (fp16)`:
+
+```bash
+jupyter notebook notebooks/model_pipeline_benchmark.ipynb
+```
+
+### Additional
+
+- Batch inference for images/videos:
+
+```bash
+python src/inference/infer_image.py
+python src/inference/infer_video.py
+```
+
+- Run FastAPI backend:
+
+```bash
+python -m uvicorn src.api.main:app --reload
+```
 
 
 

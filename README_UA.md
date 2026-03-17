@@ -4,6 +4,23 @@
 
 End-to-end проєкт з computer vision, сфокусований на детекції дронів: підготовка датасету, workflow розмітки в CVAT, навчання YOLO, експорт у ONNX, скрипти інференсу та FastAPI API.
 
+## Зміст
+
+- [Огляд Проєкту](#огляд-проєкту)
+- [Що Демонструє Цей Проєкт](#що-демонструє-цей-проєкт)
+- [Архітектура](#архітектура)
+- [Workflow Датасету Та Розмітки](#workflow-датасету-та-розмітки)
+- [Pipeline Навчання](#pipeline-навчання)
+- [Результати Бенчмарку (Повний Test Split, GPU)](#результати-бенчмарку-повний-test-split-gpu)
+- [Інференс](#інференс)
+- [API](#api)
+- [Структура Репозиторію](#структура-репозиторію)
+- [Приклади Результатів](#приклади-результатів)
+- [Бізнес-Цінність](#бізнес-цінність)
+- [Які Проблеми Вирішено](#які-проблеми-вирішено)
+- [Що Я Вивчив](#що-я-вивчив)
+- [Як Запустити](#як-запустити)
+
 ## Огляд Проєкту
 
 Цей репозиторій побудований як ML engineering pipeline для CV, а не як вебпродукт. Основний фокус: потік даних, навчання моделі, відтворювана оцінка та легке розгортання.
@@ -47,7 +64,7 @@ FastAPI API
 
 - Сирі медіа зберігаються в `data/raw/`
 - Кадри витягуються у `data/interim/`
-- Майже дублікати видаляються до етапу розмітки
+- Дублікати видаляються до етапу розмітки
 - Зображення розмічаються у CVAT
 - CVAT-експорт конвертується у YOLO-формат в `data/processed/YOLO/`
 - Коефіцієнти split налаштовуються в `configs/train_config.yaml`
@@ -169,54 +186,14 @@ drone-object-detection-pipeline
     └ architecture.png
 ```
 
-## Як Запустити
+## Приклади Результатів
 
-1. Встановити залежності:
+Візуальні приклади (детекція солдатів):
 
-```bash
-pip install -r requirements.txt
-```
-
-Системна вимога для підготовки даних:
-
-- Встанови `ffmpeg` і переконайся, що він доступний у `PATH` (команда `ffmpeg -version` має працювати).
-
-2. Підготувати датасет із CVAT-експорту:
-
-```bash
-python src/data/prepare_dataset.py
-```
-
-3. Навчити модель:
-
-```bash
-python src/training/train_yolo.py
-```
-
-4. Оцінити модель на test split:
-
-```bash
-python src/training/evaluate.py
-```
-
-5. Експортувати в ONNX:
-
-```bash
-python src/training/export_onnx.py
-```
-
-6. Запустити скрипти інференсу:
-
-```bash
-python src/inference/infer_image.py
-python src/inference/infer_video.py
-```
-
-7. Запустити API:
-
-```bash
-python -m uvicorn src.api.main:app --reload
-```
+| Вхід | Результат детекції |
+| --- | --- |
+| ![Input sample 01](examples/input/sample_01.jpg) | ![Output sample 01](examples/output/sample_01_bbox.jpg) |
+| ![Input sample 02](examples/input/sample_02.jpg) | ![Output sample 02](examples/output/sample_02_bbox.jpg) |
 
 ## Бізнес-Цінність
 
@@ -242,3 +219,83 @@ python -m uvicorn src.api.main:app --reload
 - структуровані конфіги спрощують відтворювані ML-експерименти
 - deployment-артефакти (ONNX + API) роблять CV-проєкт завершеним
 - невеликі й чіткі pipeline легше захищати на співбесіді, ніж переускладнені стеки
+
+## Як Запустити
+
+### Системні Вимоги
+
+- Встановити Python-залежності:
+
+```bash
+pip install -r requirements.txt
+```
+
+- Встановити `ffmpeg` і переконатися, що він доступний у `PATH` (команда `ffmpeg -version` має працювати).
+- Для розмітки великих обсягів даних запустити локальний контейнер CVAT (Docker) і використовувати його як середовище анотації.
+
+### Підготовка Даних
+
+1. Завантажити сирі відео у `data/raw/`.
+2. Витягнути кадри та прибрати майже дублікати:
+
+```bash
+python src/data/extract_frames.py
+python src/data/deduplicate.py
+```
+
+3. Створити Task у CVAT і виконати розмітку кадрів.
+4. Експортувати розмітку у YOLO-формат. Якщо у вашому CVAT прямий YOLO-експорт недоступний, нормалізувати структуру датасету скриптом:
+
+```bash
+python src/data/prepare_dataset.py
+```
+
+5. Виконати аналіз датасету:
+
+```bash
+jupyter notebook notebooks/dataset_analysis.ipynb
+```
+
+### Створення Моделі
+
+1. Налаштувати параметри у `configs/train_config.yaml` та `configs/dataset.yaml`.
+2. Навчити `.pt` модель:
+
+```bash
+python src/training/train_yolo.py
+```
+
+3. Оцінити модель на `test` split:
+
+```bash
+python src/training/evaluate.py
+```
+
+4. Експортувати модель у `.onnx`:
+
+```bash
+python src/training/export_onnx.py
+```
+
+### Бенчмарк
+
+Використати notebook для порівняння `.pt`, `.onnx` та `.onnx (fp16)`:
+
+```bash
+jupyter notebook notebooks/model_pipeline_benchmark.ipynb
+```
+
+### Додатково
+
+- Пакетний інференс зображень/відео:
+
+```bash
+python src/inference/infer_image.py
+python src/inference/infer_video.py
+```
+
+- Запуск FastAPI бекенду:
+
+```bash
+python -m uvicorn src.api.main:app --reload
+```
