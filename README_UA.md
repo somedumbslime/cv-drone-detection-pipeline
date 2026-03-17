@@ -71,6 +71,8 @@ FastAPI API
 - GPU: NVIDIA GeForce GTX 1080
 - Фреймворки: PyTorch + ONNX Runtime (`CUDAExecutionProvider`)
 - Дані оцінки: повний `test` split із `configs/dataset.yaml`
+- Роздільна здатність входу: `640x640`
+- Batch size для бенчмарку: `1` (latency на одному зображенні)
 
 | model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -212,14 +214,6 @@ python src/inference/infer_video.py
 python -m uvicorn src.api.main:app --reload
 ```
 
-## Приклади Результатів
-
-Додайте приклади для портфоліо:
-
-- `examples/input/`: 2-3 вхідні приклади
-- `examples/output/`: 2-3 результати детекції з bbox
-- `metrics.json`: precision/recall/mAP з оцінки на test split
-
 ## Бізнес-Цінність
 
 Цей проєкт позиціонується як ML pipeline, що вирішує практичні задачі моніторингу:
@@ -244,5 +238,4 @@ python -m uvicorn src.api.main:app --reload
 - структуровані конфіги спрощують відтворювані ML-експерименти
 - deployment-артефакти (ONNX + API) роблять CV-проєкт завершеним
 - невеликі й чіткі pipeline легше захищати на співбесіді, ніж переускладнені стеки
-
 

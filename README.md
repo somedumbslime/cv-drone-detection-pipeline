@@ -14,6 +14,7 @@ Practical focus: automate object detection in drone imagery to reduce manual rev
 
 - dataset preparation from raw media
 - deduplication and data quality checks
+- perceptual-hash based duplicate removal before annotation to reduce label noise
 - CVAT-to-YOLO annotation conversion with train/val/test split
 - YOLO model training and evaluation
 - ONNX export for deployment-ready inference
@@ -71,6 +72,8 @@ Benchmark setup:
 - GPU: NVIDIA GeForce GTX 1080
 - Frameworks: PyTorch + ONNX Runtime (`CUDAExecutionProvider`)
 - Evaluation data: full `test` split from `configs/dataset.yaml`
+- Input resolution: `640x640`
+- Benchmark batch size: `1` (single-image latency measurement)
 
 | model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
