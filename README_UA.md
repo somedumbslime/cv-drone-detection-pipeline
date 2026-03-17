@@ -93,13 +93,13 @@ FastAPI API
 
 | model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `.onnx` | `models/onnx/model.onnx` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.418 | 106.18 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float32` |
-| `.pt` | `models/weights/best.pt` | 5.19 | 0.5126 | 0.3467 | 0.3558 | 0.1658 | 13.718 | 72.90 | torch:cuda | `float32` |
-| `.onnx (fp16)` | `models/onnx/model.fp16.onnx` | 5.09 | 0.4944 | 0.3529 | 0.3563 | 0.1656 | 13.829 | 72.31 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float16` |
+| `.onnx` | `models/onnx/model.onnx` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float32` |
+| `.pt` | `models/weights/best.pt` | 5.19 | 0.5126 | 0.3467 | 0.3558 | 0.1658 | 12.505 | 79.97 | torch:cuda | `float32` |
+| `.onnx (fp16)` | `models/onnx/model.fp16.onnx` | 5.09 | 0.4944 | 0.3529 | 0.3563 | 0.1656 | 12.812 | 78.05 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float16` |
 
 Ключові висновки:
 
-- `.onnx` (FP32) найшвидша модель у цьому середовищі: близько `1.46x` FPS відносно `.pt`.
+- `.onnx` (FP32) найшвидша модель у цьому середовищі: близько `1.34x` FPS відносно `.pt`.
 - Просідання якості від `.pt` до `.onnx` невелике (`mAP50`: `-0.0018`, `mAP50-95`: `-0.0010`) і прийнятне для багатьох real-time сценаріїв.
 - `.onnx (fp16)` не швидша за `.onnx` FP32 на GTX 1080 (Pascal без Tensor Cores), тому FP16 тут не найкращий варіант.
 
