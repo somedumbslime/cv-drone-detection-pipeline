@@ -18,7 +18,7 @@ data_preparation:
     hash_size: 8
     hamming_threshold: 5
 train:
-  model: yolo11n.pt
+  model: yolo26n.pt
   data: data/processed/YOLO/dataset.yaml
   epochs: 50
   imgsz: 640
@@ -27,7 +27,7 @@ train:
   project: runs/train
   name: drone_detection
 evaluate:
-  weights: models/weights/best.pt
+  weights: models/weights/best26n.pt
   data: data/processed/YOLO/dataset.yaml
   split: test
   imgsz: 640
@@ -35,23 +35,24 @@ evaluate:
   device: cuda
   output: metrics.json
 export:
-  weights: models/weights/best.pt
+  weights: models/weights/best26n.pt
   imgsz: 640
   format: onnx
   dynamic: false
   simplify: true
   output_dir: models/onnx
 inference:
-  weights: models/weights/best.onnx
-  conf: 0.25
+  weights: models/weights/best26n.onnx
+  conf: 0.284
   image:
-    input_dir: examples/input
-    output_dir: examples/output
+    input_dir: data/processed/YOLO/images/test
+    output_dir: data/processed/processed_photo
     output_suffix: _bbox
   video:
     input_dir: examples/input
     output_dir: examples/output
     output_suffix: _pred
     output_ext: .mp4
+  data: data/processed/YOLO/dataset.yaml
 api:
-  weights: models/weights/best.pt
+  weights: models/weights/best26n.pt

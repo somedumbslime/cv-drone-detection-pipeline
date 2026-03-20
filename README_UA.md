@@ -79,7 +79,7 @@ FastAPI API
 - Скрипт оцінки: `src/training/evaluate.py`
 - Вихід метрик: `metrics.json`
 - Повний notebook для train/export/benchmark: `notebooks/model_pipeline_benchmark.ipynb`
-  - GPU-таблиця порівняння: `.pt`, `.onnx`, `.onnx (fp16)`
+  - GPU-таблиця порівняння: ONNX FP32 між різними варіантами моделей
 
 ## Результати Бенчмарку (Повний Test Split, GPU)
 
@@ -91,22 +91,21 @@ FastAPI API
 - Роздільна здатність входу: `640x640`
 - Batch size для бенчмарку: `1` (latency на одному зображенні)
 
-| model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `.onnx` | `models/onnx/model.onnx` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float32` |
-| `.pt` | `models/weights/best.pt` | 5.19 | 0.5126 | 0.3467 | 0.3558 | 0.1658 | 12.505 | 79.97 | torch:cuda | `float32` |
-| `.onnx (fp16)` | `models/onnx/model.fp16.onnx` | 5.09 | 0.4944 | 0.3529 | 0.3563 | 0.1656 | 12.812 | 78.05 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float16` |
+| model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | input_dtype |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `numpy.float32` |
+| `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `numpy.float32` |
 
 Ключові висновки:
 
-- `.onnx` (FP32) найшвидша модель у цьому середовищі: близько `1.34x` FPS відносно `.pt`.
-- Просідання якості від `.pt` до `.onnx` невелике (`mAP50`: `-0.0018`, `mAP50-95`: `-0.0010`) і прийнятне для багатьох real-time сценаріїв.
-- `.onnx (fp16)` не швидша за `.onnx` FP32 на GTX 1080 (Pascal без Tensor Cores), тому FP16 тут не найкращий варіант.
+- `yolo26n (onnx.fp32)` у цьому середовищі краща за `yolo12s (onnx.fp32)`.
+- Якість суттєво вища у `yolo26n` (`map50 +0.2539`, `map50_95 +0.1578`).
+- Runtime також кращий у `yolo26n` (`8.936 ms` vs `9.332 ms`, `111.91 FPS` vs `107.16 FPS`) при меншому розмірі моделі.
 
 Рекомендація для edge deployment:
 
-- Основна модель: `.onnx` FP32 (найкращий баланс latency/FPS та якості).
-- Резерв/еталон: `.pt` для baseline-порівнянь під час навчання.
+- Основна модель: `yolo26n (onnx.fp32)` як найкращий баланс latency/FPS та якості в цьому бенчмарку.
+- Додатковий варіант: `yolo12s (onnx.fp32)`, якщо в проєкті потрібен саме цей baseline.
 
 ## Інференс
 
@@ -279,7 +278,7 @@ python src/training/export_onnx.py
 
 ### Бенчмарк
 
-Використати notebook для порівняння `.pt`, `.onnx` та `.onnx (fp16)`:
+Використати notebook для порівняння `yolo12s (onnx.fp32)` та `yolo26n (onnx.fp32)`:
 
 ```bash
 jupyter notebook notebooks/model_pipeline_benchmark.ipynb

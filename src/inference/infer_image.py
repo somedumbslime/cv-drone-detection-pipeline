@@ -4,9 +4,9 @@ import cv2
 import yaml
 
 try:
-    from src.inference.utils import draw_detections, load_model, run_inference
+    from src.inference.utils import draw_detections, load_class_names, load_model, run_inference
 except ModuleNotFoundError:
-    from utils import draw_detections, load_model, run_inference
+    from utils import draw_detections, load_class_names, load_model, run_inference
 
 CONFIG_PATH = "configs/train_config.yaml"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
@@ -33,6 +33,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     model = load_model(inference_config["weights"])
+    class_names = load_class_names(inference_config.get("data"))
     conf = float(inference_config.get("conf", 0.25))
 
     processed = 0
@@ -43,7 +44,7 @@ def main() -> None:
             continue
 
         predictions = run_inference(model, image, conf=conf)
-        rendered = draw_detections(image, predictions[0])
+        rendered = draw_detections(image, predictions[0], class_names=class_names)
 
         out_name = f"{image_path.stem}{output_suffix}{image_path.suffix}"
         out_path = output_dir / out_name

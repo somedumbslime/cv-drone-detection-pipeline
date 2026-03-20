@@ -80,7 +80,7 @@ Detailed notes: `docs/dataset.md`
 - Evaluation script: `src/training/evaluate.py`
 - Metrics output: `metrics.json`
 - Full training/export/benchmark notebook: `notebooks/model_pipeline_benchmark.ipynb`
-  - GPU benchmark table: `.pt`, `.onnx`, `.onnx (fp16)`
+  - GPU benchmark table: ONNX FP32 comparison across model variants
 
 ## Benchmark Results (Full Test Split, GPU)
 
@@ -92,22 +92,21 @@ Benchmark setup:
 - Input resolution: `640x640`
 - Benchmark batch size: `1` (single-image latency measurement)
 
-| model_format | path | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `.onnx` | `models/onnx/model.onnx` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float32` |
-| `.pt` | `models/weights/best.pt` | 5.19 | 0.5126 | 0.3467 | 0.3558 | 0.1658 | 12.505 | 79.97 | torch:cuda | `float32` |
-| `.onnx (fp16)` | `models/onnx/model.fp16.onnx` | 5.09 | 0.4944 | 0.3529 | 0.3563 | 0.1656 | 12.812 | 78.05 | onnxruntime:CUDAExecutionProvider,CPUExecutionProvider | `numpy.float16` |
+| model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | input_dtype |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `numpy.float32` |
+| `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `numpy.float32` |
 
 Key takeaways:
 
-- `.onnx` (FP32) is the fastest model in this setup: around `1.34x` FPS vs `.pt`.
-- Quality drop from `.pt` to `.onnx` is small (`mAP50`: `-0.0018`, `mAP50-95`: `-0.0010`), which is acceptable for many real-time scenarios.
-- `.onnx (fp16)` is not faster than `.onnx` FP32 on GTX 1080 (Pascal has no Tensor Cores), so FP16 is not the best option on this hardware.
+- `yolo26n (onnx.fp32)` outperforms `yolo12s (onnx.fp32)` on this setup.
+- Quality is significantly higher for `yolo26n` (`map50 +0.2539`, `map50_95 +0.1578`).
+- Runtime is also better for `yolo26n` (`8.936 ms` vs `9.332 ms`, `111.91 FPS` vs `107.16 FPS`) with smaller model size.
 
 Recommended deployment choice for edge inference:
 
-- Primary model: `.onnx` FP32 for best latency/FPS to quality balance.
-- Fallback/reference model: `.pt` for training-side baseline comparisons.
+- Primary model: `yolo26n (onnx.fp32)` for best latency/FPS to quality balance in this benchmark.
+- Secondary option: `yolo12s (onnx.fp32)` if project constraints require that exact baseline variant.
 
 ## Inference
 
@@ -279,7 +278,7 @@ python src/training/export_onnx.py
 
 ### Benchmark
 
-Use the notebook to compare `.pt`, `.onnx`, and `.onnx (fp16)`:
+Use the notebook to compare `yolo12s (onnx.fp32)` and `yolo26n (onnx.fp32)`:
 
 ```bash
 jupyter notebook notebooks/model_pipeline_benchmark.ipynb
@@ -299,6 +298,4 @@ python src/inference/infer_video.py
 ```bash
 python -m uvicorn src.api.main:app --reload
 ```
-
-
 

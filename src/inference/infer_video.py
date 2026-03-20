@@ -4,15 +4,15 @@ import cv2
 import yaml
 
 try:
-    from src.inference.utils import draw_detections, load_model, run_inference
+    from src.inference.utils import draw_detections, load_class_names, load_model, run_inference
 except ModuleNotFoundError:
-    from utils import draw_detections, load_model, run_inference
+    from utils import draw_detections, load_class_names, load_model, run_inference
 
 CONFIG_PATH = "configs/train_config.yaml"
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v"}
 
 
-def process_video(model, conf: float, input_path: Path, output_path: Path) -> None:
+def process_video(model, class_names: dict[int, str], conf: float, input_path: Path, output_path: Path) -> None:
     cap = cv2.VideoCapture(str(input_path))
     if not cap.isOpened():
         raise FileNotFoundError(f"Unable to open input video: {input_path}")
@@ -36,7 +36,7 @@ def process_video(model, conf: float, input_path: Path, output_path: Path) -> No
             break
 
         pred = run_inference(model, frame, conf=conf)[0]
-        out_frame = draw_detections(frame, pred)
+        out_frame = draw_detections(frame, pred, class_names=class_names)
         writer.write(out_frame)
         frame_count += 1
 
@@ -67,13 +67,14 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     model = load_model(inference_config["weights"])
+    class_names = load_class_names(inference_config.get("data"))
     conf = float(inference_config.get("conf", 0.25))
 
     processed = 0
     for video_path in video_paths:
         out_name = f"{video_path.stem}{output_suffix}{output_ext}"
         out_path = output_dir / out_name
-        process_video(model, conf, video_path, out_path)
+        process_video(model, class_names, conf, video_path, out_path)
         processed += 1
 
     print(f"Processed videos: {processed}")
