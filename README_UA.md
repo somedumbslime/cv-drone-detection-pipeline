@@ -2,7 +2,15 @@
 
 [English version](README.md)
 
+<p align="right">
+  <img src="assets/raptor-ai.gif" alt="Raptor AI"/>
+</p>
+
 End-to-end проєкт з computer vision, сфокусований на детекції дронів: підготовка датасету, workflow розмітки в CVAT, навчання YOLO, експорт у ONNX, скрипти інференсу та FastAPI API.
+
+<p align="center">
+  <img src="assets/soldiers.gif" alt="Soldier detection demo" />
+</p>
 
 ## Зміст
 

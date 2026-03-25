@@ -37,6 +37,8 @@ models/onnx/*
 !models/weights/.gitkeep
 !models/onnx/.gitkeep
 
+!assets/*
+
 runs/
 logs/
 *.pt

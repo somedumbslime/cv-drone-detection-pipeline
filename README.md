@@ -1,8 +1,16 @@
-﻿# Drone Object Detection Pipeline
+﻿# RAPTOR-AI (MilTech, UAV)
 
 [Українська версія](README_UA.md)
 
+<p align="right">
+  <img src="assets/raptor-ai.gif" alt="Raptor AI"/>
+</p>
+
 End-to-end computer vision project focused on drone detection: dataset preparation, CVAT annotation workflow, YOLO training, ONNX export, inference scripts, and FastAPI serving.
+
+<p align="center">
+  <img src="assets/soldiers.gif" alt="Soldier detection demo" />
+</p>
 
 ## Table of Contents
 

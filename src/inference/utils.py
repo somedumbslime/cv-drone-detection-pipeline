@@ -69,12 +69,12 @@ def _class_color(cls_id: int) -> tuple[int, int, int]:
 def _fit_label_to_box(
     class_name: str,
     score: float,
-    box_width: int,
+    max_text_width: int,
     font,
     base_scale: float,
 ) -> tuple[str, float, int, int, int, int]:
-    """Fit label text into bbox width by reducing scale/verbosity."""
-    max_text_width = max(box_width - 8, 16)
+    """Fit label text into available width by reducing scale/verbosity."""
+    max_text_width = max(max_text_width, 16)
     candidates = [f"{class_name} {score:.2f}", class_name, class_name[:10]]
 
     for label in candidates:
@@ -86,8 +86,12 @@ def _fit_label_to_box(
                 return label, scale, thickness, tw, th, baseline
             scale -= 0.03
 
-    # Last fallback: no label text (box only)
-    return "", 0.35, 1, 0, 0, 0
+    # Last fallback: always keep class name visible
+    fallback = class_name if class_name else "object"
+    scale = 0.35
+    thickness = 1
+    (tw, th), baseline = cv2.getTextSize(fallback, font, scale, thickness)
+    return fallback, scale, thickness, tw, th, baseline
 
 
 def draw_detections(
@@ -133,32 +137,35 @@ def draw_detections(
             rendered, (x1, y1), (x2, y2), color, line_thickness, lineType=cv2.LINE_AA
         )
 
-        # Label fitted to bbox width
+        # Label fitted to frame width (class name must stay visible even for tiny boxes)
         label, font_scale, text_thickness, tw, th, baseline = _fit_label_to_box(
-            class_name, score, box_w, font, base_scale
+            class_name, score, max_text_width=w - 12, font=font, base_scale=base_scale
         )
-        if not label:
-            continue
 
         pad_x = 4
         label_h = th + baseline + 6
-        label_w = min(tw + 2 * pad_x, box_w)
+        label_w = tw + 2 * pad_x
 
-        # Prefer label above bbox; fallback inside top of bbox if there is no space
+        # Prefer label above bbox; then below bbox; final fallback to nearest visible area
         top_y1 = y1 - label_h - 2
         top_y2 = y1 - 2
 
+        # Keep label visible in frame width
+        max_bg_x1 = max(0, w - label_w - 1)
+        bg_x1 = max(0, min(x1, max_bg_x1))
+        bg_x2 = min(w - 1, bg_x1 + label_w)
+
         if top_y1 >= 0:
-            bg_x1, bg_y1, bg_x2, bg_y2 = x1, top_y1, x1 + label_w, top_y2
-            text_x = bg_x1 + pad_x
-            text_y = bg_y2 - baseline - 2
+            bg_y1, bg_y2 = top_y1, top_y2
+        elif y2 + label_h + 2 <= h - 1:
+            bg_y1 = y2 + 2
+            bg_y2 = y2 + 2 + label_h
         else:
-            bg_x1 = x1
-            bg_y1 = y1 + 2
-            bg_x2 = x1 + label_w
-            bg_y2 = min(y1 + 2 + label_h, y2)
-            text_x = bg_x1 + pad_x
-            text_y = min(bg_y2 - baseline - 2, y2 - 2)
+            bg_y1 = max(0, min(y1 + 2, h - label_h - 1))
+            bg_y2 = min(h - 1, bg_y1 + label_h)
+
+        text_x = bg_x1 + pad_x
+        text_y = bg_y2 - baseline - 2
 
         # Keep coords in frame bounds
         bg_x1 = max(0, min(bg_x1, w - 1))
