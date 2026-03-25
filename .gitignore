@@ -24,6 +24,9 @@ data/raw/*
 data/interim/*
 data/annotations/*
 data/processed/*
+data/video/input/*
+data/video/output/*
+
 !data/raw/.gitkeep
 !data/interim/.gitkeep
 !data/annotations/.gitkeep

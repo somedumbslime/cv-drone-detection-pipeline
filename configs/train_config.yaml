@@ -2,10 +2,18 @@
 data_preparation:
   cvat_root: data/processed/CVAT
   yolo_root: data/processed/YOLO
+  tile_root: data/processed/TILED
   split:
     train: 0.7
     val: 0.2
     test: 0.1
+    seed: 42
+  tiling:
+    tile_size: [640, 384]
+    overlap: 0.25
+    keep_ratio: 0.4
+    min_box_px: 4
+    empty_to_positive_ratio: 1.0
     seed: 42
   extract_frames:
     input_dir: data/raw
@@ -19,7 +27,7 @@ data_preparation:
     hamming_threshold: 5
 train:
   model: yolo26n.pt
-  data: data/processed/YOLO/dataset.yaml
+  data: data/processed/TILED/dataset.yaml
   epochs: 50
   imgsz: 640
   batch: 16
@@ -28,7 +36,7 @@ train:
   name: drone_detection
 evaluate:
   weights: models/weights/best26n.pt
-  data: data/processed/YOLO/dataset.yaml
+  data: data/processed/TILED/dataset.yaml
   split: test
   imgsz: 640
   batch: 16
@@ -45,14 +53,14 @@ inference:
   weights: models/weights/best26n.onnx
   conf: 0.284
   image:
-    input_dir: data/processed/YOLO/images/test
+    input_dir: data/processed/TILED/images/test
     output_dir: data/processed/processed_photo
     output_suffix: _bbox
   video:
-    input_dir: examples/input
-    output_dir: examples/output
+    input_dir: data/video/input
+    output_dir: data/video/output
     output_suffix: _pred
     output_ext: .mp4
-  data: data/processed/YOLO/dataset.yaml
+  data: data/processed/TILED/dataset.yaml
 api:
   weights: models/weights/best26n.pt
