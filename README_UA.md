@@ -2,7 +2,7 @@
 
 [English version](README.md)
 
-<p align="right">
+<p align="center">
   <img src="assets/raptor-ai.gif" alt="Raptor AI"/>
 </p>
 
