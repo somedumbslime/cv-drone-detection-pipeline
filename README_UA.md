@@ -19,7 +19,7 @@ End-to-end проєкт з computer vision, сфокусований на дет
 - [Архітектура](#архітектура)
 - [Workflow Датасету Та Розмітки](#workflow-датасету-та-розмітки)
 - [Pipeline Навчання](#pipeline-навчання)
-- [Результати Бенчмарку (Повний Test Split, GPU)](#результати-бенчмарку-повний-test-split-gpu)
+- [Результати Бенчмарку](#результати-бенчмарку)
 - [Інференс](#інференс)
 - [API](#api)
 - [Структура Репозиторію](#структура-репозиторію)
@@ -87,33 +87,40 @@ FastAPI API
 - Скрипт оцінки: `src/training/evaluate.py`
 - Вихід метрик: `metrics.json`
 - Повний notebook для train/export/benchmark: `notebooks/model_pipeline_benchmark.ipynb`
-  - GPU-таблиця порівняння: ONNX FP32 між різними варіантами моделей
+  - зведена таблиця бенчмарку між версіями датасету та станом leakage
 
-## Результати Бенчмарку (Повний Test Split, GPU)
+## Результати Бенчмарку
 
 Налаштування бенчмарку:
 
-- GPU: NVIDIA GeForce GTX 1080
-- Фреймворки: PyTorch + ONNX Runtime (`CUDAExecutionProvider`)
 - Дані оцінки: повний `test` split із `configs/dataset.yaml`
 - Роздільна здатність входу: `640x640`
 - Batch size для бенчмарку: `1` (latency на одному зображенні)
+- Середовища запуску відрізняються між експериментами (GPU і CPU); для коректного контексту дивись колонку `runtime`.
 
-| model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | input_dtype |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `numpy.float32` |
-| `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `numpy.float32` |
+| experiment | train_frames | leakage_status | model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| `5800_frames_legacy` | 5800 | ймовірний leakage | `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `onnxruntime:CUDAExecutionProvider` | `numpy.float32` |
+| `5800_frames_legacy` | 5800 | ймовірний leakage | `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `onnxruntime:CUDAExecutionProvider` | `numpy.float32` |
+| `7500_frames_old_split` | 7500 | до виправлення leakage | `yolo26n (onnx.fp32)` | 9.35 | 0.8203 | 0.6171 | 0.7387 | 0.4440 | 26.860 | 37.23 | `onnxruntime:CPUExecutionProvider` | `numpy.float32` |
+| `7500_frames_old_split` | 7500 | до виправлення leakage | `yolo26n (onnx.fp16)` | 4.74 | 0.8325 | 0.6113 | 0.7379 | 0.4438 | 27.370 | 36.54 | `onnxruntime:CPUExecutionProvider` | `numpy.float16` |
+| `7500_frames_old_split` | 7500 | до виправлення leakage | `yolo26n (.pt)` | 5.15 | 0.7387 | 0.5397 | 0.6143 | 0.3373 | 96.408 | 10.37 | `torch:cpu` | `float32` |
+| `7500_frames_fixed_split` | 7500 | після виправлення leakage | `yolo26n (onnx.fp16)` | 4.74 | 0.6364 | 0.4599 | 0.4977 | 0.2603 | 26.886 | 37.19 | `onnxruntime:CPUExecutionProvider` | `numpy.float16` |
+| `7500_frames_fixed_split` | 7500 | після виправлення leakage | `yolo26n (onnx.fp32)` | 9.35 | 0.6388 | 0.4565 | 0.4972 | 0.2611 | 28.935 | 34.56 | `onnxruntime:CPUExecutionProvider` | `numpy.float32` |
+| `7500_frames_fixed_split` | 7500 | після виправлення leakage | `yolo26n (.pt)` | 5.15 | 0.6336 | 0.4741 | 0.5056 | 0.2617 | 108.369 | 9.23 | `torch:cpu` | `float32` |
 
 Ключові висновки:
 
-- `yolo26n (onnx.fp32)` у цьому середовищі краща за `yolo12s (onnx.fp32)`.
-- Якість суттєво вища у `yolo26n` (`map50 +0.2539`, `map50_95 +0.1578`).
-- Runtime також кращий у `yolo26n` (`8.936 ms` vs `9.332 ms`, `111.91 FPS` vs `107.16 FPS`) при меншому розмірі моделі.
+- Leakage у split суттєво завищував якість. На тому самому датасеті 7500 кадрів `yolo26n (onnx.fp32)` знизилась із `map50 0.7387` до `0.4972` після leakage-safe split.
+- Після виправлення leakage метрики між форматами стали значно ближчими та реалістичнішими.
+- Для CPU edge-сценарію `yolo26n (onnx.fp16)` дає найкращий компроміс швидкість/розмір (`37.19 FPS`, `4.74 MB`) при невеликій втраті якості відносно `.pt`.
+- Показники runtime між GPU та CPU експериментами не варто порівнювати напряму без однакового заліза та провайдерів.
 
 Рекомендація для edge deployment:
 
-- Основна модель: `yolo26n (onnx.fp32)` як найкращий баланс latency/FPS та якості в цьому бенчмарку.
-- Додатковий варіант: `yolo12s (onnx.fp32)`, якщо в проєкті потрібен саме цей baseline.
+- Базовий варіант для CPU edge: `yolo26n (onnx.fp16)`.
+- Якщо потрібна максимальна якість і прийнятний нижчий FPS: `yolo26n (.pt)`.
+- Якщо доступний GPU ONNX провайдер (`CUDAExecutionProvider`), перед фінальним вибором моделі треба повторити бенчмарк у тому самому середовищі.
 
 ## Інференс
 
@@ -286,7 +293,7 @@ python src/training/export_onnx.py
 
 ### Бенчмарк
 
-Використати notebook для порівняння `yolo12s (onnx.fp32)` та `yolo26n (onnx.fp32)`:
+Використати notebook для відтворення зведеного бенчмарку (версії датасету, стан leakage та формати моделі):
 
 ```bash
 jupyter notebook notebooks/model_pipeline_benchmark.ipynb

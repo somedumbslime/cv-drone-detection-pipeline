@@ -1,6 +1,7 @@
-﻿from pathlib import Path
+from pathlib import Path
 import random
 import shutil
+from collections import defaultdict
 
 import yaml
 
@@ -56,19 +57,69 @@ def resolve_images(cvat_root: Path) -> list[Path]:
     return sorted([p for p in data_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS])
 
 
-def split_images(image_paths: list[Path], train_ratio: float, val_ratio: float, test_ratio: float, seed: int) -> dict[str, list[Path]]:
-    shuffled = image_paths[:]
-    random.Random(seed).shuffle(shuffled)
+def frame_group_key(image_path: Path) -> str:
+    """Group key for leakage-safe split: <video_name>_frame_<idx> -> <video_name>."""
+    stem = image_path.stem
+    marker = "_frame_"
+    if marker in stem:
+        return stem.split(marker, 1)[0]
+    return stem
 
-    total = len(shuffled)
-    train_count = int(total * train_ratio)
-    val_count = int(total * val_ratio)
 
-    return {
-        "train": shuffled[:train_count],
-        "val": shuffled[train_count : train_count + val_count],
-        "test": shuffled[train_count + val_count :],
+def split_images(
+    image_paths: list[Path],
+    train_ratio: float,
+    val_ratio: float,
+    test_ratio: float,
+    seed: int,
+    group_by_video: bool = True,
+) -> dict[str, list[Path]]:
+    rng = random.Random(seed)
+
+    if not group_by_video:
+        shuffled = image_paths[:]
+        rng.shuffle(shuffled)
+
+        total = len(shuffled)
+        train_count = int(total * train_ratio)
+        val_count = int(total * val_ratio)
+
+        return {
+            "train": shuffled[:train_count],
+            "val": shuffled[train_count : train_count + val_count],
+            "test": shuffled[train_count + val_count :],
+        }
+
+    grouped: dict[str, list[Path]] = defaultdict(list)
+    for path in image_paths:
+        grouped[frame_group_key(path)].append(path)
+
+    groups = list(grouped.items())
+    rng.shuffle(groups)
+    groups.sort(key=lambda item: len(item[1]), reverse=True)
+
+    total_images = len(image_paths)
+    target_counts = {
+        "train": int(total_images * train_ratio),
+        "val": int(total_images * val_ratio),
+        "test": total_images - int(total_images * train_ratio) - int(total_images * val_ratio),
     }
+    split_paths: dict[str, list[Path]] = {"train": [], "val": [], "test": []}
+    current_counts = {"train": 0, "val": 0, "test": 0}
+
+    for _, group_paths in groups:
+        # Assign whole video-group to one split to avoid frame leakage.
+        split_name = max(
+            ["train", "val", "test"],
+            key=lambda s: (target_counts[s] - current_counts[s], -current_counts[s]),
+        )
+        split_paths[split_name].extend(group_paths)
+        current_counts[split_name] += len(group_paths)
+
+    for split_name in ["train", "val", "test"]:
+        rng.shuffle(split_paths[split_name])
+
+    return split_paths
 
 
 def reset_output(yolo_root: Path) -> None:
@@ -135,6 +186,7 @@ def main() -> None:
     val_ratio = float(split_cfg.get("val", 0.2))
     test_ratio = float(split_cfg.get("test", 0.1))
     seed = int(split_cfg.get("seed", 42))
+    group_by_video = bool(split_cfg.get("group_by_video", True))
 
     ratio_sum = train_ratio + val_ratio + test_ratio
     if abs(ratio_sum - 1.0) > 1e-6:
@@ -148,7 +200,14 @@ def main() -> None:
 
     class_names = read_class_names(cvat_root)
     image_paths = resolve_images(cvat_root)
-    splits = split_images(image_paths, train_ratio, val_ratio, test_ratio, seed)
+    splits = split_images(
+        image_paths=image_paths,
+        train_ratio=train_ratio,
+        val_ratio=val_ratio,
+        test_ratio=test_ratio,
+        seed=seed,
+        group_by_video=group_by_video,
+    )
 
     reset_output(yolo_root)
     create_dirs(yolo_root)
@@ -165,6 +224,7 @@ def main() -> None:
 
     print(f"Total images: {len(image_paths)}")
     print(f"train/val/test: {len(splits['train'])}/{len(splits['val'])}/{len(splits['test'])}")
+    print(f"Leakage-safe split by video groups: {group_by_video}")
     print(f"Missing label files: {missing_labels}")
     print(f"YOLO dataset saved to: {yolo_root}")
     print(f"Updated dataset config: {DATASET_CONFIG_PATH}")

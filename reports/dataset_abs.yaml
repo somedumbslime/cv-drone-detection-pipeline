@@ -1,4 +1,4 @@
-path: C:/Users/sanek/OneDrive/Рабочий стол/cv_drone_pipeline/data/processed/TILED
+path: C:/Users/sanek/OneDrive/Рабочий стол/cv_drone_pipeline/data/processed/YOLO
 train: images/train
 val: images/val
 test: images/test

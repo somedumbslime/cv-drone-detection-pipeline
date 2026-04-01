@@ -1,0 +1,4 @@
+model_format,path,size_mb,precision,recall,map50,map50_95,latency_ms,fps,runtime,input_dtype
+.onnx (fp16),models/onnx/model.fp16.onnx,4.74,0.6364,0.4599,0.4977,0.2603,26.886,37.19,onnxruntime:CPUExecutionProvider,numpy.float16
+.onnx,models/onnx/model.onnx,9.35,0.6388,0.4565,0.4972,0.2611,28.935,34.56,onnxruntime:CPUExecutionProvider,numpy.float32
+.pt,models/weights/best26n_2_7394.pt,5.15,0.6336,0.4741,0.5056,0.2617,108.369,9.23,torch:cpu,float32

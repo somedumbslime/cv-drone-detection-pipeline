@@ -19,7 +19,7 @@ End-to-end computer vision project focused on drone detection: dataset preparati
 - [Architecture](#architecture)
 - [Dataset And Labeling Workflow](#dataset-and-labeling-workflow)
 - [Training Pipeline](#training-pipeline)
-- [Benchmark Results (Full Test Split, GPU)](#benchmark-results-full-test-split-gpu)
+- [Benchmark Results](#benchmark-results)
 - [Inference](#inference)
 - [API](#api)
 - [Repository Structure](#repository-structure)
@@ -88,33 +88,40 @@ Detailed notes: `docs/dataset.md`
 - Evaluation script: `src/training/evaluate.py`
 - Metrics output: `metrics.json`
 - Full training/export/benchmark notebook: `notebooks/model_pipeline_benchmark.ipynb`
-  - GPU benchmark table: ONNX FP32 comparison across model variants
+  - consolidated benchmark table across dataset versions and leakage settings
 
-## Benchmark Results (Full Test Split, GPU)
+## Benchmark Results
 
 Benchmark setup:
 
-- GPU: NVIDIA GeForce GTX 1080
-- Frameworks: PyTorch + ONNX Runtime (`CUDAExecutionProvider`)
 - Evaluation data: full `test` split from `configs/dataset.yaml`
 - Input resolution: `640x640`
 - Benchmark batch size: `1` (single-image latency measurement)
+- Runtime environment differs across experiments (GPU and CPU); use `runtime` column for direct context.
 
-| model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | input_dtype |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `numpy.float32` |
-| `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `numpy.float32` |
+| experiment | train_frames | leakage_status | model | size_mb | precision | recall | map50 | map50_95 | latency_ms | fps | runtime | input_dtype |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| `5800_frames_legacy` | 5800 | likely leakage | `yolo12s (onnx.fp32)` | 10.09 | 0.4940 | 0.3491 | 0.3540 | 0.1648 | 9.332 | 107.16 | `onnxruntime:CUDAExecutionProvider` | `numpy.float32` |
+| `5800_frames_legacy` | 5800 | likely leakage | `yolo26n (onnx.fp32)` | 9.35 | 0.7426 | 0.5385 | 0.6079 | 0.3226 | 8.936 | 111.91 | `onnxruntime:CUDAExecutionProvider` | `numpy.float32` |
+| `7500_frames_old_split` | 7500 | before leakage fix | `yolo26n (onnx.fp32)` | 9.35 | 0.8203 | 0.6171 | 0.7387 | 0.4440 | 26.860 | 37.23 | `onnxruntime:CPUExecutionProvider` | `numpy.float32` |
+| `7500_frames_old_split` | 7500 | before leakage fix | `yolo26n (onnx.fp16)` | 4.74 | 0.8325 | 0.6113 | 0.7379 | 0.4438 | 27.370 | 36.54 | `onnxruntime:CPUExecutionProvider` | `numpy.float16` |
+| `7500_frames_old_split` | 7500 | before leakage fix | `yolo26n (.pt)` | 5.15 | 0.7387 | 0.5397 | 0.6143 | 0.3373 | 96.408 | 10.37 | `torch:cpu` | `float32` |
+| `7500_frames_fixed_split` | 7500 | after leakage fix | `yolo26n (onnx.fp16)` | 4.74 | 0.6364 | 0.4599 | 0.4977 | 0.2603 | 26.886 | 37.19 | `onnxruntime:CPUExecutionProvider` | `numpy.float16` |
+| `7500_frames_fixed_split` | 7500 | after leakage fix | `yolo26n (onnx.fp32)` | 9.35 | 0.6388 | 0.4565 | 0.4972 | 0.2611 | 28.935 | 34.56 | `onnxruntime:CPUExecutionProvider` | `numpy.float32` |
+| `7500_frames_fixed_split` | 7500 | after leakage fix | `yolo26n (.pt)` | 5.15 | 0.6336 | 0.4741 | 0.5056 | 0.2617 | 108.369 | 9.23 | `torch:cpu` | `float32` |
 
 Key takeaways:
 
-- `yolo26n (onnx.fp32)` outperforms `yolo12s (onnx.fp32)` on this setup.
-- Quality is significantly higher for `yolo26n` (`map50 +0.2539`, `map50_95 +0.1578`).
-- Runtime is also better for `yolo26n` (`8.936 ms` vs `9.332 ms`, `111.91 FPS` vs `107.16 FPS`) with smaller model size.
+- Split leakage had a major impact on quality metrics. On the same 7500-frame dataset, `yolo26n (onnx.fp32)` dropped from `map50 0.7387` to `0.4972` after leakage-safe split.
+- After fixing leakage, quality metrics across formats became much closer and more realistic.
+- On CPU edge setup, `yolo26n (onnx.fp16)` is the best speed/size compromise (`37.19 FPS`, `4.74 MB`) with minor quality gap vs `.pt`.
+- Runtime numbers across GPU and CPU experiments should not be compared directly without matching providers/hardware.
 
 Recommended deployment choice for edge inference:
 
-- Primary model: `yolo26n (onnx.fp32)` for best latency/FPS to quality balance in this benchmark.
-- Secondary option: `yolo12s (onnx.fp32)` if project constraints require that exact baseline variant.
+- Default CPU edge model: `yolo26n (onnx.fp16)`.
+- If maximum quality is required and lower FPS is acceptable: `yolo26n (.pt)`.
+- If GPU ONNX provider is available (`CUDAExecutionProvider`), re-run benchmark in the same environment before final model freeze.
 
 ## Inference
 
@@ -286,7 +293,7 @@ python src/training/export_onnx.py
 
 ### Benchmark
 
-Use the notebook to compare `yolo12s (onnx.fp32)` and `yolo26n (onnx.fp32)`:
+Use the notebook to reproduce the consolidated benchmark table (dataset versions, leakage status, and model formats):
 
 ```bash
 jupyter notebook notebooks/model_pipeline_benchmark.ipynb

@@ -8,6 +8,7 @@ data_preparation:
     val: 0.2
     test: 0.1
     seed: 42
+    group_by_video: true
   tiling:
     tile_size: [640, 384]
     overlap: 0.25
@@ -25,9 +26,17 @@ data_preparation:
     output_dir: data/interim/unique_frames
     hash_size: 8
     hamming_threshold: 5
+  semi_annotation:
+    input_dir: data/interim/unique_frames
+    output_zip: data/interim/unique_frames_yolo_detection_1_0.zip
+    weights: models/weights/best26n_2_7394f.pt
+    conf: 0.25
+    iou: 0.5
+    device: cuda
+    data: configs/dataset.yaml
 train:
   model: yolo26n.pt
-  data: data/processed/TILED/dataset.yaml
+  data: data/processed/YOLO/dataset.yaml
   epochs: 50
   imgsz: 640
   batch: 16
@@ -35,25 +44,25 @@ train:
   project: runs/train
   name: drone_detection
 evaluate:
-  weights: models/weights/best26n.pt
-  data: data/processed/TILED/dataset.yaml
+  weights: models/weights/best26n_2_7394f.pt
+  data: data/processed/YOLO/dataset.yaml
   split: test
   imgsz: 640
   batch: 16
-  device: cuda
+  device: cpu
   output: metrics.json
 export:
-  weights: models/weights/best26n.pt
+  weights: models/weights/best26n_2_7394f.pt
   imgsz: 640
   format: onnx
   dynamic: false
   simplify: true
   output_dir: models/onnx
 inference:
-  weights: models/weights/best26n.onnx
+  weights: models/weights/best26n_2_7394f.onnx
   conf: 0.284
   image:
-    input_dir: data/processed/TILED/images/test
+    input_dir: data/processed/YOLO/images/test
     output_dir: data/processed/processed_photo
     output_suffix: _bbox
   video:
@@ -61,6 +70,6 @@ inference:
     output_dir: data/video/output
     output_suffix: _pred
     output_ext: .mp4
-  data: data/processed/TILED/dataset.yaml
+  data: data/processed/YOLO/dataset.yaml
 api:
-  weights: models/weights/best26n.pt
+  weights: models/weights/best26n_7394f.pt
